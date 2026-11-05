@@ -12,6 +12,8 @@ python -m pip install -r requirements.txt
 python server.py
 ```
 
+Di macOS, XGBoost juga memerlukan OpenMP: jalankan `brew install libomp` sebelum `pip install -r requirements.txt`.
+
 Buka http://127.0.0.1:5000. Setelah dependensi terpasang, cukup klik dua kali `start.bat`. Tutup terminal atau Ctrl+C untuk menghentikan server. Server hanya menerima koneksi komputer sendiri.
 
 ## 2. Mendapat NASA FIRMS MAP_KEY
@@ -49,13 +51,13 @@ Pilihan 1–3 hari mengikuti hari akuisisi API, bukan jaminan jendela 24 jam tep
 
 **Prioritas 1 ? indikasi kebakaran aktif:** deteksi termal FIRMS seluruh Indonesia yang diakuisisi dalam 24 jam terakhir, belum kebakaran terkonfirmasi. Diurutkan per tanggal terbaru, keyakinan deteksi, FRP terbesar, lalu jam terbaru. Panel menampilkan maksimal 50 deteksi teratas; tabel hotspot dan CSV tetap tersedia di bawah.
 
-**Prioritas 2 ? potensi:** titik pada area grid pilihan, kelas 1 CatBoost, citra maksimal 14 hari. Diurutkan skor kelas 1 tertinggi lalu citra terbaru. Titik potensi dalam jarak 1 km dari deteksi aktif tidak ditampilkan ulang sebagai prioritas pencegahan. Kelas 0 tidak masuk prioritas potensi.
+**Prioritas 2 ? potensi:** titik pada area grid pilihan, kelas 1 XGBoost, citra maksimal 14 hari. Diurutkan skor kelas 1 tertinggi lalu citra terbaru. Titik potensi dalam jarak 1 km dari deteksi aktif tidak ditampilkan ulang sebagai prioritas pencegahan. Kelas 0 tidak masuk prioritas potensi.
 
 Titik yang menunggu, gagal, atau tertutup awan terlihat di **Status tiap titik grid**; kegagalan bukan label aman. Citra 15?30 hari tetap dapat dianalisis dan terlihat sebagai citra lama, tetapi tidak masuk prioritas potensi. Jika FIRMS gagal diperbarui, panel menyatakan data belum lengkap. Tidak ada notifikasi SMS/WhatsApp; prioritas tampil pada dashboard.
 
 Model telah diberi arti kelas oleh pemilik, tetapi kalibrasi probabilitas, formula NDWI, horizon prediksi, dan akurasi operasional masih perlu diverifikasi melalui notebook pelatihan. Skor 80% kelas 1 tidak otomatis berarti peluang kebakaran 80% di dunia nyata.
 
-## 3. Menggunakan Sentinel-2 dan CatBoost
+## 3. Menggunakan Sentinel-2 dan XGBoost
 
 Tidak membutuhkan kredensial Sentinel Hub/GEE. Aplikasi memakai katalog publik Earth Search v1 dan COG Sentinel-2 L2A di AWS:
 https://earth-search.aws.element84.com/v1
@@ -64,7 +66,7 @@ Untuk analisis manual, buka **Analisis manual satu titik**.
 
 1. Klik titik daratan Indonesia atau isi lintang/bujur.
 2. Pilih rentang tanggal maksimal 90 hari. Disarankan 30 hari untuk mencari citra layak.
-3. Klik **Analisis dengan CatBoost**. Backend mencari maksimal 40 citra, mengurutkan yang terbaru, lalu mencoba 5 citra terakhir dengan awan scene <40%.
+3. Klik **Analisis dengan XGBoost**. Backend mencari maksimal 40 citra, mengurutkan yang terbaru, lalu mencoba 5 citra terakhir dengan awan scene <40%.
 4. Kanal diambil pada satu piksel di lokasi tersebut. Masker SCL menolak no-data, piksel rusak, bayangan awan, awan, cirrus, dan salju.
 5. Hasil memuat kelas asli, probabilitas setiap kelas, nilai fitur, ID citra dan tanggal akuisisi. Ini analisis titik, belum berupa raster risiko seluruh Indonesia.
 
@@ -113,10 +115,10 @@ Peta menggunakan Leaflet/CARTO/OpenStreetMap dan font Google sehingga membutuhka
 - 15 pengujian lokal lulus: model asli, API, batas Indonesia, grid dan batas area, antrean bergiliran, jeda, penyimpanan, kegagalan per titik, cache citra, dan urutan prioritas.
 - Sintaks Python dan JavaScript lulus.
 - HTTP halaman, CSS, JavaScript, status model, dan batas Indonesia semuanya 200.
-- Uji lengkap Sentinel-2 → fitur → CatBoost berhasil di longitude 116.3, latitude -8.5, rentang 1–31 Agustus 2025. Citra yang dipilih: S2B_50LMR_20250824_0_L2A, akuisisi 24 Agustus 2025. Ini pemeriksaan integrasi, bukan pengukuran akurasi model.
+- Uji lengkap Sentinel-2 → fitur → XGBoost berhasil di longitude 116.3, latitude -8.5, rentang 1–31 Agustus 2025. Citra yang dipilih: S2B_50LMR_20250824_0_L2A, akuisisi 24 Agustus 2025. Ini pemeriksaan integrasi, bukan pengukuran akurasi model.
 - NASA FIRMS live telah diuji menggunakan MAP_KEY lokal melalui endpoint area; key tidak ditampilkan dalam log pengujian.
 - Tampilan belum diperiksa secara visual di browser karena sesi tidak menyediakan browser.
 
-Verifikasi pemantauan otomatis: satu titik grid daratan Lombok berhasil membaca citra `S2B_50LMR_20261018_0_L2A` (18 Oktober 2026) dan menjalankan CatBoost asli. Logika frontend pemilihan dua sudut, reset pilihan, status piksel gagal, dan skor prioritas lulus `node test_frontend.cjs`. Ini pengujian integrasi, bukan penilaian akurasi prediksi.
+Verifikasi pemantauan otomatis: satu titik grid daratan Lombok berhasil membaca citra `S2B_50LMR_20261018_0_L2A` (18 Oktober 2026) dan menjalankan XGBoost asli. Logika frontend pemilihan dua sudut, reset pilihan, status piksel gagal, dan skor prioritas lulus `node test_frontend.cjs`. Ini pengujian integrasi, bukan penilaian akurasi prediksi.
 
 Hasil kelas 1 dengan citra lebih dari 14 hari sekarang tetap ditampilkan pada bagian **hasil kelas 1 ? citra lama**, terpisah dari prioritas terbaru. Hasil ini bukan nol atau kelas 0: ia memerlukan citra baru sebelum dipakai sebagai peringatan terkini. Ringkasan grid menunjukkan jumlah hasil kelas 1 dan titik yang masih menunggu.

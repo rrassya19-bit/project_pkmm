@@ -169,7 +169,7 @@ def priorities(hotspots, points, now=None):
         if any(math.hypot((p['lon']-point['lon'])*math.cos(math.radians(point['lat'])), p['lat']-point['lat'])*111 < 1 for p in active):
             continue
         potential.append(dict(tier=2, category='Berpotensi terbakar', lat=point['lat'], lon=point['lon'],
-                              observed_at=acquired.isoformat(), confidence=None, frp=None, source='Sentinel-2 / CatBoost',
+                              observed_at=acquired.isoformat(), confidence=None, frp=None, source='Sentinel-2 / XGBoost',
                               score=score, reason='Kelas 1: prioritas pencegahan; skor model bukan kepastian kejadian.'))
     potential.sort(key=lambda p:(p['score'],p['observed_at']), reverse=True)
     return active+potential

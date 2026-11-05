@@ -11,9 +11,9 @@ for line in (ROOT / '.env').read_text(encoding='utf-8-sig').splitlines() if (ROO
         os.environ.setdefault(k.strip(), v.strip().strip(chr(34)).strip(chr(39)))
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
-BUNDLE = joblib.load(ROOT / 'model_early_warning_sentinel2.joblib')
+BUNDLE = joblib.load(ROOT / 'model_early_warning_sentinel2_xgb.joblib')
 MODEL = BUNDLE['model'] if isinstance(BUNDLE, dict) else BUNDLE
-FEATURES = list(BUNDLE.get('features', MODEL.feature_names_)) if isinstance(BUNDLE, dict) else list(MODEL.feature_names_)
+FEATURES = list(BUNDLE['features']) if isinstance(BUNDLE, dict) and BUNDLE.get('features') else list(getattr(MODEL, 'feature_names_in_', getattr(MODEL, 'feature_names_', [])))
 CACHE = {}
 SESSION = requests.Session()
 ANALYSIS_LOCK = threading.Lock()
@@ -233,7 +233,7 @@ def priority_list():
     rows = priorities(firms['points'], state['points'])
     return jsonify(rows=rows, historical_potential=historical_potential(state['points']), active_count=sum(r['tier']==1 for r in rows), potential_count=sum(r['tier']==2 for r in rows),
                    firms_updated_at=firms['retrieved_at'], warning=warning,
-                   note='Prioritas 1: deteksi termal dalam 24 jam, belum konfirmasi lapangan. Prioritas 2: kelas 1 CatBoost dengan citra maksimal 14 hari. Sampel grid bukan peta risiko seluruh area.')
+                   note='Prioritas 1: deteksi termal dalam 24 jam, belum konfirmasi lapangan. Prioritas 2: kelas 1 XGBoost dengan citra maksimal 14 hari. Sampel grid bukan peta risiko seluruh area.')
 
 if __name__ == '__main__':
     MONITOR.start_worker()
