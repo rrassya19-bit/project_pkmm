@@ -1,0 +1,6 @@
+.env
+__pycache__/
+.venv/
+
+monitor_state.json
+monitor_state.tmp
